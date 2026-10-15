@@ -20,6 +20,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "actionlint-py>=1.7.12.25",
     "deptry>=0.25.1",
     "hypothesis>=6.170.0",
     "import-linter>=2.15",

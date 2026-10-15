@@ -2,7 +2,7 @@
 # `make check` until it passes -- that is the definition of done.
 .DEFAULT_GOAL := help
 
-.PHONY: help setup fix lint hygiene typecheck arch deps test check hooks clean
+.PHONY: help setup fix lint hygiene workflows typecheck arch deps test check hooks clean
 
 help: ## Show the available commands
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -21,6 +21,9 @@ lint: ## Check formatting and linting (no changes made)
 hygiene: ## Validate YAML/TOML and common file hygiene (no changes made)
 	uv run prek run check-added-large-files check-merge-conflict check-toml check-yaml detect-private-key --all-files
 
+workflows: ## Lint the GitHub Actions workflow files
+	uv run actionlint
+
 typecheck: ## Type-check the project
 	uv run ty check
 
@@ -33,7 +36,7 @@ deps: ## Check dependency hygiene (unused or missing dependencies)
 test: ## Run the test suite with the coverage gate
 	uv run pytest --cov
 
-check: hygiene lint typecheck arch deps test ## Run every check; the definition of done
+check: hygiene workflows lint typecheck arch deps test ## Run every check; the definition of done
 	@echo "All checks passed."
 
 hooks: ## Install the git hooks (runs on every commit)

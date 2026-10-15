@@ -42,6 +42,7 @@ them mid-task. So this template makes correctness mechanical:
 | Dependencies | deptry | No unused or missing runtime dependencies |
 | Repo policy | `tests/test_repo_policy.py` | No suppressions; small source files |
 | File hygiene | prek + pre-commit hooks | YAML/TOML, merge conflicts, secrets, large files |
+| Workflows | actionlint | Valid actions, inputs, and shell in `.github/workflows` |
 | CI | GitHub Actions | `make check` as the single required check |
 | Security | CodeQL, pip-audit, detect-private-key | Vulnerable deps, unsafe patterns, leaks |
 | Test quality | mutmut (weekly CI job) | Tests that actually catch bugs for review |
@@ -68,9 +69,10 @@ After bootstrapping, delete `scripts/bootstrap.py` (one-time tool) and set
 | Command | What it does |
 |---|---|
 | `make fix` | Auto-format and apply safe fixes |
-| `make check` | The full gate: hygiene, lint, types, architecture, deps, tests, coverage |
+| `make check` | The full gate: hygiene, workflows, lint, types, architecture, deps, tests, coverage |
 | `make test` | Tests with coverage only |
 | `make hygiene` | YAML/TOML, merge conflicts, secrets, large files (part of `make check`) |
+| `make workflows` | Lint `.github/workflows` (part of `make check`) |
 | `uv run pytest tests/test_cli.py -q` | One test file while iterating |
 | `uv run python-llm-template Ada` | Run the program |
 

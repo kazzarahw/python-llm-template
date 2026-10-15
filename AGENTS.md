@@ -23,7 +23,7 @@ Never install with `pip` directly. Dependencies change only through `uv add`.
 
 | Command | Purpose |
 |---|---|
-| `make check` | **The gate.** Hygiene, lint, types, architecture, deps, tests, coverage. |
+| `make check` | **The gate.** Hygiene, workflows, lint, types, architecture, deps, tests, coverage. |
 | `make fix` | Auto-format and auto-fix. Run after every edit. |
 | `uv run pytest tests/test_cli.py -q` | Run one test file while iterating. |
 | `make typecheck` | Type-check the whole project. Never use `ty check <file>`: file mode can report a false green. |
@@ -90,8 +90,8 @@ Do not edit these to make a task pass; fix the code, or stop and ask:
 
 ## Definition of done
 
-- `make check` passes completely (hygiene, lint, format, types, architecture,
-  deps, tests, coverage >= 85%), with no new suppression comments.
+- `make check` passes completely (hygiene, workflows, lint, format, types,
+  architecture, deps, tests, coverage >= 85%), with no new suppression comments.
 - New or changed behavior is covered by tests.
 - Documentation is updated if behavior, structure, or commands changed.
 - The final report lists what changed and shows the green `make check` output.
