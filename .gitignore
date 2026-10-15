@@ -208,6 +208,12 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# mutmut (mutation testing)
+mutants/
+
+# import-linter
+.import_linter_cache/
+
 # PyPI configuration file
 .pypirc
 

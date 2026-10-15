@@ -1,0 +1,30 @@
+name: Mutation testing
+
+# Mutation testing checks that the test suite actually *catches* bugs, not
+# just that it runs. It is slow, so it runs weekly and on demand -- not on
+# every pull request. Survivors are printed for review; see docs/testing.md.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: mutation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run mutmut run
+      - name: Report surviving mutants and totals
+        run: |
+          uv run mutmut results
+          uv run mutmut export-cicd-stats
+          cat mutants/mutmut-cicd-stats.json
