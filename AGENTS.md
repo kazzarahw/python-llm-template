@@ -19,6 +19,16 @@ make setup        # installs/refreshes the environment
 
 Never install with `pip` directly. Dependencies change only through `uv add`.
 
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `make check` | **The gate.** Hygiene, lint, types, architecture, deps, tests, coverage. |
+| `make fix` | Auto-format and auto-fix. Run after every edit. |
+| `uv run pytest tests/test_cli.py -q` | Run one test file while iterating. |
+| `make typecheck` | Type-check the whole project. Never use `ty check <file>`: file mode can report a false green. |
+| `uv run python-llm-template Ada` | Run the program. |
+
 ## Workflow -- follow these steps in order
 
 1. **Read.** Open every file you plan to change, including its tests. Never
@@ -37,29 +47,22 @@ Never install with `pip` directly. Dependencies change only through `uv add`.
 8. **Report.** Say what changed, list the files, and paste the final
    `make check` result. "Should work" is not done.
 
-## Commands
-
-| Command | Purpose |
-|---|---|
-| `make setup` | Install or refresh the environment. |
-| `make fix` | Auto-format and auto-fix. Run after every edit. |
-| `make check` | **The gate.** Runs lint, types, architecture, deps, tests, coverage. |
-| `uv run pytest tests/test_cli.py -q` | Run one test file while iterating. |
-| `uv run python-llm-template Ada` | Run the program. |
-
 ## Hard rules
 
-1. Never weaken a check: no `# noqa`, `# type: ignore`, coverage pragmas, or
-   edited thresholds to make `make check` pass. Fix the code. If you believe
+1. Never weaken a check: no `# noqa`, `# type: ignore`, `# ty: ignore`, or
+   `# pragma: no cover` comments; no edited thresholds. `make check` rejects
+   suppression comments mechanically -- fix the code instead. If you believe
    a suppression is genuinely required, stop and ask the user.
 2. Every function has full type annotations: parameters and return.
-3. Every module, class, and public function has a docstring. Comments explain
+3. Every module, class, and public function has a docstring (ruff's `D` rules
+   enforce this in `src/` and `scripts/`; tests are exempt). Comments explain
    *why*, never *what*.
 4. Keep functions small. Enforced ceilings: 10 branches, 40 statements,
    5 returns, 5 arguments, complexity 10. Split the function; never raise
    the limits.
-5. Keep files under roughly 300 lines. A small model must be able to hold a
-   whole file in context.
+5. Keep files small. Source files over 300 lines fail `make check`
+   (`tests/test_repo_policy.py`); keep tests and scripts in the same
+   ballpark. A small model must be able to hold a whole file in context.
 6. No `print()` in `src/` outside `src/python_llm_template/cli.py`.
    (Developer scripts under `scripts/` may print progress.)
 7. Raise specific exceptions (`ValueError`, `TypeError`, ...) with clear
@@ -74,10 +77,21 @@ Never install with `pip` directly. Dependencies change only through `uv add`.
 11. Respect the layers (enforced by import-linter):
     `cli` -> `services` -> `core`; `core` imports nothing from the package.
 
+## Boundaries
+
+Do not edit these to make a task pass; fix the code, or stop and ask:
+
+- Tool configuration and thresholds in `pyproject.toml` -- the checks are
+  the contract (rule 1).
+- `Makefile`, `.github/workflows/`, and `docs/` -- process and CI files need
+  human review.
+- `scripts/bootstrap.py` -- the one-time rename tool, deleted right after
+  bootstrap.
+
 ## Definition of done
 
-- `make check` passes completely (lint, format, types, architecture, deps,
-  tests, coverage >= 85%).
+- `make check` passes completely (hygiene, lint, format, types, architecture,
+  deps, tests, coverage >= 85%), with no new suppression comments.
 - New or changed behavior is covered by tests.
 - Documentation is updated if behavior, structure, or commands changed.
 - The final report lists what changed and shows the green `make check` output.

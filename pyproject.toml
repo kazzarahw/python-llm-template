@@ -7,6 +7,7 @@ authors = [
     { name = "kazzarah", email = "kazzarahwoods@protonmail.com" }
 ]
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = []
 
@@ -54,6 +55,7 @@ select = [
     "B",     # bugbear: likely bugs
     "C4",    # comprehension simplifications
     "C90",   # cyclomatic complexity (mccabe)
+    "D",     # pydocstyle: every module, class, and public function is documented
     "DTZ",   # naive datetimes
     "E",     # pycodestyle errors
     "ERA",   # commented-out code
@@ -94,8 +96,13 @@ max-branches = 10
 max-returns = 5
 max-statements = 40
 
+[tool.ruff.lint.pydocstyle]
+# Google-style sections (Args:, Returns:, Raises:), as in docs/conventions.md.
+convention = "google"
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
+    "D",       # test names state the behavior; extra docstrings are noise
     "PLR2004", # magic values are expected in tests
     "S101",    # assert is the test API
 ]
@@ -116,10 +123,22 @@ docstring-code-format = true
 # pyright" guide). Fix reported problems; do not suppress them.
 # ---------------------------------------------------------------------------
 [tool.ty.rules]
+# The four rules below approximate the `--strict` mode of other checkers; the
+# rest goes beyond it (see ty's "coming from mypy or pyright" guide).
+division-by-zero = "warn"
 dynamic-function-decorator-return = "error"
 missing-type-argument = "error"
+possibly-missing-attribute = "warn"
+possibly-missing-import = "warn"
 possibly-unresolved-reference = "warn"
 unsound-return-statement = "error"
+
+[tool.ty.analysis]
+# `# type: ignore` must not be able to silence ty: suppressions are banned
+# outright (AGENTS.md rule 1), so make them ineffective too.
+respect-type-ignore-comments = false
+strict-equality-semantics = true
+strict-generic-narrowing = true
 
 # ---------------------------------------------------------------------------
 # pytest: tests + coverage gate.
@@ -147,7 +166,6 @@ skip_covered = true
 exclude_also = [
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
-    "raise NotImplementedError",
 ]
 
 # ---------------------------------------------------------------------------
@@ -167,23 +185,12 @@ layers = [
 ]
 
 # ---------------------------------------------------------------------------
-# deptry: dependency hygiene. Every dependency must be imported somewhere or
-# explicitly listed here with a reason.
+# deptry: dependency hygiene for runtime dependencies. Development tools are
+# run via `uv run`, never imported, and are outside deptry's default scan.
 # ---------------------------------------------------------------------------
 [tool.deptry]
 # The package's own imports; deptry cannot always detect them automatically.
 known_first_party = ["python_llm_template"]
-ignore = [
-    "deptry",         # run via `uv run deptry`, never imported
-    "import-linter",  # run via `uv run lint-imports`
-    "mutmut",         # run via `uv run mutmut`
-    "pip-audit",      # run via `uv run pip-audit`
-    "prek",           # run via `uv run prek`
-    "pytest-cov",     # pytest plugin
-    "pytest-timeout", # pytest plugin
-    "ruff",           # run via `uv run ruff`, never imported
-    "ty",             # run via `uv run ty`, never imported
-]
 
 # ---------------------------------------------------------------------------
 # mutmut: mutation testing (scheduled CI job, see .github/workflows/mutation.yml)

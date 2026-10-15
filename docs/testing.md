@@ -48,6 +48,29 @@ def test_build_greeting_property_echoes_the_cleaned_name(name: str) -> None:
     assert build_greeting(name) == f"Hello, {name.strip()}!"
 ```
 
+## Warnings are errors
+
+`filterwarnings = ["error"]` turns any warning into a failure. When a
+*dependency* starts emitting one (usually a deprecation), the remedy is a
+targeted filter in `pyproject.toml` that names the dependency:
+
+```toml
+filterwarnings = [
+    "error",
+    "ignore:.*:DeprecationWarning:some_dependency",
+]
+```
+
+Never relax the policy globally; a warning is either handled or pinned to a
+specific dependency with a comment saying why.
+
+## Policy tests
+
+`tests/test_repo_policy.py` makes two AGENTS.md rules mechanical: the suite
+fails on suppression comments anywhere in `src`, `tests`, or `scripts`, and
+on source files longer than 300 lines. Treat its messages as design feedback,
+not obstacles.
+
 ## What to never do
 
 - No network access, no sleeping, no dependence on wall-clock time or test

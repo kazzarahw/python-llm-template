@@ -1,6 +1,8 @@
 # Runs with `prek` (https://prek.j178.dev) or classic `pre-commit`.
 # Install the git shims once with `make hooks`.
-# `make check` is the authoritative gate; these hooks are a fast first pass.
+# `make check` is the authoritative gate and also runs the hygiene hooks below.
+# These hooks check only -- never fix -- so a commit can never contain code
+# that has not passed `make check`. `make fix` is the fixing path.
 default_stages: [pre-commit]
 
 repos:
@@ -19,8 +21,8 @@ repos:
     rev: v0.17.1
     hooks:
       - id: ruff-check
-        args: [--fix]
       - id: ruff-format
+        args: [--check]
 
   - repo: local
     hooks:

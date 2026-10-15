@@ -8,8 +8,8 @@ Steps performed:
     1. Validate the new distribution name.
     2. Rename ``src/python_llm_template`` to ``src/<module_name>``.
     3. Rewrite ``python_llm_template`` / ``python-llm-template`` references in
-       the files under the paths listed in ``EDIT_PATHS`` (nothing else is
-       touched).
+       the text files under the paths listed in ``EDIT_PATHS`` (nothing else
+       is touched; binary files are skipped).
     4. Regenerate ``uv.lock`` if ``uv`` is on PATH (otherwise print a reminder).
 
 Afterwards run ``make setup`` and ``make check``.
@@ -65,32 +65,72 @@ def validate(name: str) -> str:
     module_name = re.sub(r"[-.]", "_", name)
     if not module_name.isidentifier() or keyword.iskeyword(module_name):
         sys.exit(f"error: '{module_name}' is not a valid Python module name.")
+    if module_name in sys.stdlib_module_names:
+        sys.exit(f"error: '{module_name}' would shadow a standard-library module.")
     return module_name
 
 
 def iter_editable_files() -> list[Path]:
-    """List existing files under the allowlisted paths."""
+    """List existing files under the allowlisted paths (bytecode excluded)."""
     files: list[Path] = []
     for rel in EDIT_PATHS:
         path = REPO_ROOT / rel
         if path.is_dir():
-            files.extend(sorted(p for p in path.rglob("*") if p.is_file()))
+            files.extend(
+                sorted(
+                    p
+                    for p in path.rglob("*")
+                    if p.is_file() and "__pycache__" not in p.parts
+                )
+            )
         elif path.is_file():
             files.append(path)
     return files
 
 
 def files_to_change() -> list[Path]:
-    """List files that still contain one of the old names."""
+    """List files that still contain one of the old names.
+
+    Files that cannot be decoded as UTF-8 are binary and are skipped.
+    """
     paths: list[Path] = []
     for path in iter_editable_files():
-        text = path.read_text(encoding="utf-8")
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
         if OLD_MODULE in text or OLD_DIST in text:
             paths.append(path)
     return paths
 
 
+def rewrite_file(path: Path, dist_name: str, module_name: str) -> None:
+    """Rewrite the old names in one file.
+
+    The entry-point key in ``pyproject.toml`` is always quoted: an unquoted
+    dotted name (``my.project``) would be a TOML table, not a string key.
+    """
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(OLD_MODULE, module_name).replace(OLD_DIST, dist_name)
+    if path.name == "pyproject.toml":
+        text = text.replace(
+            f'{dist_name} = "{module_name}.cli:main"',
+            f'"{dist_name}" = "{module_name}.cli:main"',
+        )
+    path.write_text(text, encoding="utf-8")
+
+
+def regenerate_lockfile() -> None:
+    """Regenerate ``uv.lock``, or explain how to."""
+    if shutil.which("uv") is not None:
+        subprocess.run(["uv", "lock"], cwd=REPO_ROOT, check=True)
+        print("regenerated: uv.lock")
+    else:
+        print("note: run `uv lock` (or `make setup`) to regenerate uv.lock.")
+
+
 def main() -> None:
+    """Rename the template in place and regenerate the lockfile."""
     args = parse_args()
     module_name = validate(args.name)
 
@@ -99,32 +139,30 @@ def main() -> None:
         sys.exit(f"error: {source_dir} not found; already bootstrapped?")
 
     target_dir = REPO_ROOT / "src" / module_name
-    if target_dir.exists():
+    same_module = target_dir.resolve() == source_dir.resolve()
+    if target_dir.exists() and not same_module:
         sys.exit(f"error: {target_dir} already exists; refusing to overwrite.")
 
-    paths = files_to_change()
     verb = "would update" if args.dry_run else "updated"
-    for path in paths:
+    for path in files_to_change():
         if not args.dry_run:
-            text = path.read_text(encoding="utf-8")
-            text = text.replace(OLD_MODULE, module_name).replace(OLD_DIST, args.name)
-            path.write_text(text, encoding="utf-8")
+            rewrite_file(path, args.name, module_name)
         print(f"{verb}: {path.relative_to(REPO_ROOT)}")
 
     if args.dry_run:
-        print(f"would rename: src/{OLD_MODULE} -> src/{module_name}")
+        if not same_module:
+            print(f"would rename: src/{OLD_MODULE} -> src/{module_name}")
         return
 
-    shutil.move(str(source_dir), str(target_dir))
-    print(f"renamed: src/{OLD_MODULE} -> src/{module_name}")
-
-    if shutil.which("uv") is not None:
-        subprocess.run(["uv", "lock"], cwd=REPO_ROOT, check=True)
-        print("regenerated: uv.lock")
+    if same_module:
+        print(f"module name unchanged: src/{OLD_MODULE}")
     else:
-        print("note: run `uv lock` (or `make setup`) to regenerate uv.lock.")
+        shutil.move(str(source_dir), str(target_dir))
+        print(f"renamed: src/{OLD_MODULE} -> src/{module_name}")
 
+    regenerate_lockfile()
     print(f"\ndone. Next: `make setup`, then `make check`, for '{args.name}'.")
+    print("last: update [project].authors, then delete scripts/bootstrap.py.")
 
 
 if __name__ == "__main__":

@@ -29,7 +29,9 @@ that code looks like. `make check` enforces most of them mechanically.
 
 ## Docstrings
 
-- Every module gets a one-line summary.
+- Every module gets a one-line summary. Ruff's `D` rules (Google convention)
+  fail `make check` when a docstring is missing in `src/` or `scripts/`;
+  tests are exempt.
 - Classes: what an instance represents.
 - Public functions: a one-line summary, plus `Args:`, `Returns:`, and
   `Raises:` sections when they add information. Example:
@@ -68,6 +70,14 @@ def build_greeting(name: str) -> str:
 - `print()` is allowed only in `cli.py` (and in developer scripts under
   `scripts/`). Libraries and services return values or raise; the CLI decides
   how failures look to the user.
+
+## Suppressions
+
+There are none. `# noqa`, `# type: ignore`, `# ty: ignore`, and
+`# pragma: no cover` fail `make check` (`tests/test_repo_policy.py`), ty is
+configured not to honor `type: ignore` at all, and ruff flags unused `noqa`.
+A suppression is never the fix: change the code, or ask the human to change
+the contract.
 
 ## Constants and configuration
 
